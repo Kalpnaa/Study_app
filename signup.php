@@ -1,82 +1,54 @@
 <?php
 session_start();
 
-// Initialize "users" array in session if not exists
-if (!isset($_SESSION['users'])) {
-    $_SESSION['users'] = [];
-}
+// Include DB (allow creation)
+require 'db.php';
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $name = $_POST["name"];
-    $email = $_POST["email"];
+    $name = trim($_POST["name"]);
+    $email = trim($_POST["email"]);
     $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
 
     // Check if email already exists
-    $existingUser = null;
-    foreach ($_SESSION['users'] as $user) {
-        if ($user['email'] === $email) {
-            $existingUser = $user;
-            break;
-        }
-    }
+    $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $stmt->store_result();
 
-    if ($existingUser) {
+    if ($stmt->num_rows > 0) {
         $error = "⚠️ Email already registered!";
     } else {
-        // Save user in session
-        $_SESSION['users'][] = [
-            "name" => $name,
-            "email" => $email,
-            "password" => $password
-        ];
-
-        // ✅ Redirect to login page instead of dashboard
-        header("Location: login.php?signup=1");
-        exit();
+        $stmt->close();
+        $stmt = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $name, $email, $password);
+        if ($stmt->execute()) {
+            header("Location: login.php?signup=1");
+            exit();
+        } else {
+            $error = "❌ Error creating account!";
+        }
     }
+    $stmt->close();
 }
-
-if (isset($_GET['logout'])) {
-    $success = "✅ You have been logged out successfully.";
-}
-
-if (isset($_GET['timeout'])) {
-    $error = "⏳ Session expired due to inactivity. Please log in again.";
-}   
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Sign Up - Study Buddy</title>
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    .success {
-      color: green;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .error {
-      color: red;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Sign Up - Study Buddy</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="auth-container">
-    <h2>Create Account ✨</h2>
-    <?php 
-        if (!empty($error)) echo "<p class='error'>$error</p>"; 
-        if (!empty($success)) echo "<p class='success'>$success</p>";
-    ?>
-    <form method="POST">
-      <input type="text" name="name" placeholder="Full Name" required>
-      <input type="email" name="email" placeholder="Email Address" required>
-      <input type="password" name="password" placeholder="Password" required>
-      <button type="submit">Sign Up</button>
-      <p>Already have an account? <a href="login.php">Login here</a></p>
-    </form>
-  </div>
+<div class="auth-container">
+<h2>Create Account ✨</h2>
+<?php if (!empty($error)) echo "<p class='error'>$error</p>"; ?>
+<form method="POST">
+    <input type="text" name="name" placeholder="Full Name" required>
+    <input type="email" name="email" placeholder="Email Address" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Sign Up</button>
+    <p>Already have an account? <a href="login.php">Login here</a></p>
+</form>
+</div>
 </body>
 </html>

@@ -1,31 +1,45 @@
 <?php
 session_start();
 
-// Agar login nahi hai to login page bhejo
+require 'db.php';
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-// Initialize tasks session array
-if (!isset($_SESSION['tasks'])) {
-    $_SESSION['tasks'] = [];
-}
-
-// Fetch username from session array
 $user_id = $_SESSION['user_id'];
-$username = $_SESSION['users'][$user_id]['name'];
 
-// Handle task addition from dashboard (via POST)
+// Initialize variables
+$task_added = false;
+$success = '';
+$error = '';
+
+// Fetch username
+$stmt = $conn->prepare("SELECT name FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($username);
+$stmt->fetch();
+$stmt->close();
+
+// Handle task addition
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['taskTitle'])) {
     $title = trim($_POST['taskTitle']);
-    $desc = trim($_POST['taskDesc']);
+    $desc  = trim($_POST['taskDesc']);
 
     if ($title) {
-        $_SESSION['tasks'][] = [
-            'title' => htmlspecialchars($title),
-            'desc'  => htmlspecialchars($desc)
-        ];
+        $stmt = $conn->prepare("INSERT INTO tasks (user_id, title, description) VALUES (?, ?, ?)");
+        $stmt->bind_param("iss", $user_id, $title, $desc);
+        if ($stmt->execute()) {
+            $task_added = true;
+            $success = "✅ Task added successfully! <a href='sidebar_tasks.php'>Click here to view all tasks and start working</a>";
+        } else {
+            $error = "❌ Failed to add task. Please try again.";
+        }
+        $stmt->close();
+    } else {
+        $error = "⚠️ Task title cannot be empty!";
     }
 }
 ?>
@@ -73,6 +87,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['taskTitle'])) {
             <textarea id="taskDesc" name="taskDesc" placeholder="Task description"></textarea>
             <button type="submit">Add Task</button>
           </form>
+
+          <!-- Success / Error Messages -->
+          <?php if ($task_added): ?>
+             <p style="color:green;"><?php echo $success; ?></p>
+          <?php elseif (!empty($error)): ?>
+             <p style="color:red;"><?php echo $error; ?></p>
+          <?php endif; ?>
         </div>
 
         <!-- Flashcards -->
@@ -118,31 +139,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['taskTitle'])) {
   function openModal() {
     document.getElementById('stepsModal').style.display = 'block';
   }
-
   function closeModal() {
     document.getElementById('stepsModal').style.display = 'none';
   }
-
   window.onclick = function(event) {
     const modal = document.getElementById('stepsModal');
-    if (event.target == modal) {
-      modal.style.display = 'none';
-    }
+    if (event.target == modal) modal.style.display = 'none';
   }
 
   /* ---------- ADD TASK VALIDATION ---------- */
- function validateTask() {
+  function validateTask() {
     const title = document.getElementById("taskTitle").value.trim();
-    const desc = document.getElementById("taskDesc").value.trim(); // define desc
-
     if (!title) {
       alert("⚠️ Please enter a task title!");
       return false;
     }
-
-    alert(`✅ Task Added!\n\nTitle: ${title}\nDescription: ${desc || "No description provided."}`);
-    return true; // allow form submission
-}
+    return true;
+  }
 
   /* ---------- GENERATE FLASHCARDS ---------- */
   function generateFlashcards() {
@@ -156,7 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['taskTitle'])) {
       alert("⚠️ Please choose a file to upload!");
       return;
     }
-
     const fileName = fileInput.files[0].name;
     alert(`📂 Successfully uploaded: ${fileName}`);
     fileInput.value = ""; // reset
