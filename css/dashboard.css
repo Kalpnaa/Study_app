@@ -1,0 +1,151 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: #f8f9fa;
+  color: #333;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: #2563eb;
+  color: #fff;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  margin-bottom: 30px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin: 15px 0;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sidebar ul li:hover,
+.sidebar ul li.active {
+  background: #1e40af;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+/* Cards Grid: 2 per row */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 cards per row */
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.card h3 {
+  margin-top: 0;
+}
+
+.card input,
+.card textarea {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.card button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.card button:hover {
+  background: #1e40af;
+}
+
+#timer {
+  font-size: 24px;
+  margin: 15px 0;
+}
+
+/* Style marquee */
+marquee {
+  background-color: pink; /* Pink background */
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  text-decoration: underline;
+}
+/* Card hover effect */
+.card:hover {
+  transform: translateY(-5px);       /* Slightly lift the card */
+  box-shadow: 0 8px 15px rgba(0,0,0,0.2); /* Bigger shadow */
+  transition: all 0.3s ease;         /* Smooth animation */
+}
+/* Footer styling */
+.footer {
+  background-color: #2563eb;
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  border-radius: 10px;
+  margin-top: 20px;
+  font-size: 14px;
+}
+    /* Modal styling */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 50%;
+      border-radius: 8px;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover { color: black; }

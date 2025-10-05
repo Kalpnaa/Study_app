@@ -1,0 +1,124 @@
+body {
+    font-family: "Segoe UI", sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Gradient colors for flow, ending in blue */
+    background: linear-gradient(-45deg, #2563eb, #1e40af, #9333ea, #f43f5e, #10b981,#2563eb);
+    background-size: 600% 600%;
+    animation: gradientFlow 30s linear infinite;
+    color: #fff;
+}
+
+@keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    25% { background-position: 50% 50%; }
+    50% { background-position: 75% 50%; }
+    75% { background-position: 90% 50%; }
+    100% { background-position: 100% 50%; } /* Ends at blue */
+}
+
+/* ---------- Form Container ---------- */
+.auth-container {
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    padding: 40px 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    width: 350px;
+    text-align: center;
+    /* Animation */
+    transform: translateY(-50px);
+    opacity: 0;
+    animation: fadeInUp 0.8s forwards;
+}
+
+/* Fade-in-up animation for form */
+@keyframes fadeInUp {
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.auth-container h2 {
+    margin-bottom: 25px;
+    color: #2563eb;
+    font-size: 28px;
+    letter-spacing: 1px;
+}
+
+/* ---------- Form Elements ---------- */
+.auth-container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-container input {
+    padding: 14px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.auth-container input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+    outline: none;
+}
+
+.auth-container button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+}
+
+.auth-container button:hover {
+    background: #1e40af;
+    transform: scale(1.05);
+}
+
+.auth-container a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.auth-container a:hover {
+    color: #1e40af;
+}
+
+/* ---------- Messages ---------- */
+.auth-container .error {
+    background: #ffdddd;
+    color: #d8000c;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    animation: fadeInMsg 0.5s ease;
+}
+
+.auth-container .success {
+    background: #ddffdd;
+    color: #007700;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    animation: fadeInMsg 0.5s ease;
+}
+
+@keyframes fadeInMsg {
+    from {opacity: 0; transform: translateY(-10px);}
+    to {opacity: 1; transform: translateY(0);}
+}
