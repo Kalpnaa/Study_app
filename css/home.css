@@ -1,0 +1,161 @@
+/* Base styling similar to dashboard.css */
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #f3f4f6, #e0f2fe);
+    color: #333;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.home-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 50px 20px;
+    min-height: 100vh;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2; /* Keep content above floating icons */
+}
+
+/* Floating icons animation */
+.floating-icons {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.floating-icons .icon {
+    position: absolute;
+    font-size: 32px;
+    opacity: 0.5;
+    animation: float 12s linear infinite;
+}
+
+/* Random positions and delays */
+.floating-icons .icon:nth-child(1) { left: 5%; animation-delay: 0s; }
+.floating-icons .icon:nth-child(2) { left: 20%; animation-delay: 2s; }
+.floating-icons .icon:nth-child(3) { left: 35%; animation-delay: 4s; }
+.floating-icons .icon:nth-child(4) { left: 50%; animation-delay: 6s; }
+.floating-icons .icon:nth-child(5) { left: 70%; animation-delay: 3s; }
+.floating-icons .icon:nth-child(6) { left: 85%; animation-delay: 5s; }
+
+@keyframes float {
+    0% { transform: translateY(100vh) rotate(0deg); opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0.5; }
+}
+
+/* Header */
+header h1 {
+    font-size: 42px;
+    color: #2563eb;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+header p {
+    font-size: 18px;
+    color: #555;
+    text-align: center;
+    max-width: 600px;
+    margin-bottom: 40px;
+}
+
+/* Home content cards */
+.home-content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.home-card {
+    background: #fff;
+    padding: 25px 20px;
+    border-radius: 15px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    width: 280px;
+    text-align: center;
+    transition: all 0.4s ease;
+    cursor: pointer;
+    transform: translateY(0);
+}
+
+.home-card:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+}
+
+.home-card h2 {
+    margin-top: 0;
+    color: #2563eb;
+}
+
+.home-card p {
+    font-size: 15px;
+    color: #555;
+}
+
+/* Get Started button */
+.get-started {
+    margin-bottom: 50px;
+}
+
+.btn-get-started {
+    background: #ef4444;
+    color: white;
+    padding: 16px 32px;
+    text-decoration: none;
+    font-size: 20px;
+    border-radius: 10px;
+    transition: all 0.4s ease;
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-get-started:hover {
+    background: #b91c1c;
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+/* Footer */
+.footer {
+    background-color: #2563eb;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    border-radius: 10px;
+    width: 100%;
+    font-size: 14px;
+}
+
+/* Fade-in animation for elements */
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 1s forwards;
+}
+
+.fade-in.delay-1 { animation-delay: 0.2s; }
+.fade-in.delay-2 { animation-delay: 0.4s; }
+.fade-in.delay-3 { animation-delay: 0.6s; }
+.fade-in.delay-4 { animation-delay: 0.8s; }
+.fade-in.delay-5 { animation-delay: 1s; }
+.fade-in.delay-6 { animation-delay: 1.2s; }
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

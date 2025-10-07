@@ -50,6 +50,9 @@ if (!empty($_GET['signup'])) echo "<p class='success'>✅ Account created succes
     <input type="email" name="email" placeholder="Email Address" required>
     <input type="password" name="password" placeholder="Password" required>
     <button type="submit">Login</button>
+    <p style="margin-top:10px;">
+        <a href="forgot_password.php">Forgot Password?</a>
+    </p>
     <p>Don’t have an account? <a href="signup.php">Sign Up</a></p>
 </form>
 </div>
