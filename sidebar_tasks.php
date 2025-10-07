@@ -38,17 +38,6 @@ if (isset($_GET['complete'])) {
 
     header("Location: sidebar_tasks.php");
     exit();
-    $task_id = (int)$_GET['complete'];
-    $start_time = time();
-    $remaining = 60; // 1 minute timer
-
-    $stmt = $conn->prepare("UPDATE tasks SET status='in-progress', start_time=?, remaining=? WHERE id=? AND user_id=?");
-    $stmt->bind_param("iiii", $start_time, $remaining, $task_id, $user_id);
-    $stmt->execute();
-    $stmt->close();
-
-    header("Location: sidebar_tasks.php");
-    exit();
 }
 ?>
 <!DOCTYPE html>
@@ -61,8 +50,7 @@ if (isset($_GET['complete'])) {
 .timer { font-weight:bold; color:#007bff; margin-left:10px; }
 .completed { color: #6c757d; text-decoration: line-through; }
 .task-btn { margin-left:10px; color:#fff; background:#28a745; padding:2px 6px; text-decoration:none; border-radius:4px; cursor:pointer; }
-.stop-btn { background:#dc3545; }
-.resume-btn { background:#ffc107; color:#000; }
+.toggle-btn { background:#ffc107; color:#000; }
 </style>
 </head>
 <body>
@@ -101,8 +89,8 @@ if (isset($_GET['complete'])) {
                 <span class="timer" id="timer-<?php echo $task['id']; ?>">
                   <?php echo str_pad($task['remaining'] ?? 60, 2, '0', STR_PAD_LEFT); ?>:00
                 </span>
-                <button class="task-btn stop-btn" onclick="stopTimer(<?php echo $task['id']; ?>)">⏸ Stop Timer</button>
-                <button class="task-btn resume-btn" onclick="resumeTimer(<?php echo $task['id']; ?>)">▶ Resume Timer</button>
+                <!-- ✅ Single toggle button -->
+                <button class="task-btn toggle-btn" id="toggle-<?php echo $task['id']; ?>" onclick="toggleTimer(<?php echo $task['id']; ?>)">⏸ Stop</button>
               <?php else: ?>
                 <span class="completed">✔ Completed</span>
               <?php endif; ?>
@@ -134,6 +122,7 @@ window.addEventListener("DOMContentLoaded", function() {
   ?>
   const taskId<?php echo $task_id; ?> = <?php echo $task_id; ?>;
   const timerElem<?php echo $task_id; ?> = document.getElementById('timer-<?php echo $task_id; ?>');
+  const toggleBtn<?php echo $task_id; ?> = document.getElementById('toggle-<?php echo $task_id; ?>');
   remainingTimes[taskId<?php echo $task_id; ?>] = Math.max(0, <?php echo $remaining; ?> - (Math.floor(Date.now()/1000) - <?php echo $start_time; ?>));
 
   function updateTimer<?php echo $task_id; ?>() {
@@ -141,6 +130,7 @@ window.addEventListener("DOMContentLoaded", function() {
       if (remainingTimes[taskId<?php echo $task_id; ?>] <= 0) {
           clearInterval(intervals[taskId<?php echo $task_id; ?>]);
           timerElem<?php echo $task_id; ?>.innerText = "✔ Completed";
+          toggleBtn<?php echo $task_id; ?>.style.display = 'none';
           alert("🎉 Task completed! 💪");
           fetch('update_task_status.php?id=<?php echo $task_id; ?>&status=completed');
           return;
@@ -154,23 +144,24 @@ window.addEventListener("DOMContentLoaded", function() {
   intervals[taskId<?php echo $task_id; ?>] = setInterval(updateTimer<?php echo $task_id; ?>, 1000);
   <?php endif; endforeach; ?>
 
-  window.stopTimer = function(id) {
+  window.toggleTimer = function(id) {
+      const btn = document.getElementById('toggle-' + id);
+      const timerElem = document.getElementById('timer-' + id);
+      if (!btn || !timerElem) return;
+
       if (intervals[id]) {
+          // ✅ Stop the timer
           clearInterval(intervals[id]);
           intervals[id] = null;
-          alert("⏸ Timer stopped!");
-      }
-  }
-
-  window.resumeTimer = function(id) {
-      if (!intervals[id] && remainingTimes[id] > 0) {
-          intervals[id] = setInterval(() => {
-              const timerElem = document.getElementById('timer-' + id);
-              if (!timerElem) return;
+          btn.innerText = "▶ Resume";
+      } else {
+          // ✅ Resume the timer
+          intervals[id] = setInterval(function() {
               if (remainingTimes[id] <= 0) {
                   clearInterval(intervals[id]);
                   timerElem.innerText = "✔ Completed";
-                  alert("🎉 Task completed!");
+                  btn.style.display = 'none';
+                  alert("🎉 Task completed! 💪");
                   fetch('update_task_status.php?id=' + id + '&status=completed');
                   return;
               }
@@ -179,7 +170,7 @@ window.addEventListener("DOMContentLoaded", function() {
               timerElem.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
               remainingTimes[id]--;
           }, 1000);
-          alert("▶ Timer resumed!");
+          btn.innerText = "⏸ Stop";
       }
   }
 });

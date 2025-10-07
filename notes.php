@@ -77,7 +77,6 @@ $stmt->close();
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>My Notes - Study Buddy</title>
 <link rel="stylesheet" href="css/dashboard.css" />
 </head>
 <body>
@@ -86,18 +85,20 @@ $stmt->close();
   <aside class="sidebar">
     <h2><u>Study-Buddy 📚💻</u></h2>
     <ul>
-      <li><a href="dashboard.php" style="color:white;">📊 Dashboard</a></li>
-      <li><a href="sidebar_tasks.php" style="color:white;">📝 Tasks</a></li>
-      <li><a href="flashcards.php" style="color:white;">📚 Flashcards</a></li>
-      <li class="active"><a href="notes.php" style="color:white;">📂 Notes</a></li>
+      <li><a href="dashboard.php" style="color:white;text-decoration:none;">📊 Dashboard</a></li>
+      <li><a href="sidebar_tasks.php" style="color:white;text-decoration:none;">📝 Tasks</a></li>
+      <li><a href="flashcards.php" style="color:white;text-decoration:none;">📚 Flashcards</a></li>
+      <li class="active"><a href="notes.php" style="color:white;text-decoration:none;">📂 Notes</a></li>
       <li>👥 Study Circle</li>
-      <li><a href="logout.php" style="color:white;">🚪 Logout</a></li>
+      <li><a href="logout.php" style="color:white;text-decoration:none;">🚪 Logout</a></li>
     </ul>
   </aside>
 
   <!-- Main Content -->
   <main class="main">
-    <h2>Welcome, <?php echo htmlspecialchars($username); ?> 👋</h2>
+    <marquee behavior="scroll" direction="left" scrollamount="10">
+    <h2>Your Notes, <?php echo htmlspecialchars($username); ?> 👋</h2>
+  </marquee>
 
     <!-- Add Text Note -->
     <div class="card auth-container">

@@ -7,18 +7,26 @@ if (!isset($_SESSION['user_id'])) {
     die("User not logged in");
 }
 
+$user_id = (int)$_SESSION['user_id'];
+
+// ✅ Fetch username (added this block)
+$stmt = $conn->prepare("SELECT name FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($username);
+$stmt->fetch();
+$stmt->close();
+
 // Add new flashcard
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['question'])) {
     $q = $conn->real_escape_string($_POST['question']);
     $a = $conn->real_escape_string($_POST['answer']);
-    $user_id = (int)$_SESSION['user_id']; // ✅ include user_id
 
     // ✅ insert user_id to satisfy foreign key
     $conn->query("INSERT INTO flashcards(user_id, question, answer) VALUES ($user_id, '$q', '$a')");
 }
 
 // ✅ Fetch only the logged-in user's flashcards
-$user_id = (int)$_SESSION['user_id'];
 $flashcards = $conn->query("SELECT * FROM flashcards WHERE user_id = $user_id");
 ?>
 <!DOCTYPE html>
@@ -42,6 +50,9 @@ $flashcards = $conn->query("SELECT * FROM flashcards WHERE user_id = $user_id");
       </ul>
     </aside>
     <main class="main">
+      <marquee behavior="scroll" direction="left" scrollamount="10">
+        <h2>Your Flashcards, <?php echo htmlspecialchars($username); ?> 👋</h2>
+      </marquee>
       <div class="cards">
         <div class="card auth-container">
           <h2>Add Flashcard</h2>
@@ -68,5 +79,9 @@ $flashcards = $conn->query("SELECT * FROM flashcards WHERE user_id = $user_id");
       </div>
     </main>
   </div>
+  <!-- Footer -->
+<footer class="footer">
+  <p>© 2025 Study Buddy. All Rights Reserved.</p>
+</footer>
 </body>
 </html>
