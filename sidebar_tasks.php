@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'db.php';
+require 'db.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -27,6 +28,17 @@ $stmt->close();
 
 // Handle starting a task (mark in-progress)
 if (isset($_GET['complete'])) {
+    $task_id = (int)$_GET['complete'];
+    $start_time = time();
+    $remaining = 60; // 1 minute timer
+
+    $stmt = $conn->prepare("UPDATE tasks SET status='in-progress', start_time=?, remaining=? WHERE id=? AND user_id=?");
+    $stmt->bind_param("iiii", $start_time, $remaining, $task_id, $user_id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: sidebar_tasks.php");
+    exit();
     $task_id = (int)$_GET['complete'];
     $start_time = time();
     $remaining = 60; // 1 minute timer
