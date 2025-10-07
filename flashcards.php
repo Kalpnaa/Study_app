@@ -2,15 +2,24 @@
 session_start();
 require 'db.php';
 
+// ✅ Ensure user is logged in (so user_id is available)
+if (!isset($_SESSION['user_id'])) {
+    die("User not logged in");
+}
+
 // Add new flashcard
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['question'])) {
     $q = $conn->real_escape_string($_POST['question']);
     $a = $conn->real_escape_string($_POST['answer']);
-    $conn->query("INSERT INTO flashcards(question, answer) VALUES ('$q', '$a')");
+    $user_id = (int)$_SESSION['user_id']; // ✅ include user_id
+
+    // ✅ insert user_id to satisfy foreign key
+    $conn->query("INSERT INTO flashcards(user_id, question, answer) VALUES ($user_id, '$q', '$a')");
 }
 
-// Fetch flashcards
-$flashcards = $conn->query("SELECT * FROM flashcards");
+// ✅ Fetch only the logged-in user's flashcards
+$user_id = (int)$_SESSION['user_id'];
+$flashcards = $conn->query("SELECT * FROM flashcards WHERE user_id = $user_id");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,14 +30,13 @@ $flashcards = $conn->query("SELECT * FROM flashcards");
 </head>
 <body>
   <div class="container">
-   
- <aside class="sidebar">
+    <aside class="sidebar">
       <h2><u>Study-Buddy 📚💻</u></h2>
       <ul>
         <li class="active"><a href="dashboard.php" style="color:white; text-decoration:none;">📊 Dashboard</a></li>
         <li><a href="sidebar_tasks.php" style="color:white; text-decoration:none;">📝 Tasks</a></li>
-        <li><a href="flashcards.php" style="color:white; text-decoration:none;">📚 Flashcards</a></li>       <!-- Added link -->
-        <li><a href="notes.php" style="color:white; text-decoration:none;">📂 Notes</a></li>              <!-- Added link -->
+        <li><a href="flashcards.php" style="color:white; text-decoration:none;">📚 Flashcards</a></li>
+        <li><a href="notes.php" style="color:white; text-decoration:none;">📂 Notes</a></li>
         <li>👥 Study Circle</li>
         <li><a href="logout.php" style="color:white; text-decoration:none;">🚪 Logout</a></li>
       </ul>
