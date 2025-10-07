@@ -1,6 +1,6 @@
 <?php
 session_start();
-$conn = new mysqli('localhost', 'root', '', 'study_app');
+require 'db.php';
 
 // Add new flashcard
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['question'])) {
