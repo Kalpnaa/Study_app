@@ -1,5 +1,6 @@
 <?php
 session_start();
+require 'db.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -7,22 +8,36 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$username = $_SESSION['users'][$user_id]['name'];
 
-if (!isset($_SESSION['tasks'])) {
-    $_SESSION['tasks'] = [];
-}
+// Fetch current user's info from DB
+$stmt = $conn->prepare("SELECT name, email FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($username, $email);
+$stmt->fetch();
+$stmt->close();
 
-// Handle task start (mark in-progress)
+// Fetch tasks for this user
+$stmt = $conn->prepare("SELECT id, title, description, status, start_time, remaining FROM tasks WHERE user_id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$tasks = $result->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+// Handle starting a task (mark in-progress)
 if (isset($_GET['complete'])) {
-    $index = (int)$_GET['complete'];
-    if (isset($_SESSION['tasks'][$index])) {
-        $_SESSION['tasks'][$index]['status'] = 'in-progress';
-        $_SESSION['tasks'][$index]['start_time'] = time();
-        $_SESSION['tasks'][$index]['remaining'] = 60; // 1 minute in seconds
-        header("Location: sidebar_tasks.php");
-        exit();
-    }
+    $task_id = (int)$_GET['complete'];
+    $start_time = time();
+    $remaining = 60; // 1 minute timer
+
+    $stmt = $conn->prepare("UPDATE tasks SET status='in-progress', start_time=?, remaining=? WHERE id=? AND user_id=?");
+    $stmt->bind_param("iiii", $start_time, $remaining, $task_id, $user_id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: sidebar_tasks.php");
+    exit();
 }
 ?>
 <!DOCTYPE html>
@@ -61,20 +76,22 @@ if (isset($_GET['complete'])) {
   <div class="cards">
     <div class="card">
       <h3>📝 All Tasks</h3>
-      <?php if (!empty($_SESSION['tasks'])): ?>
+      <?php if (!empty($tasks)): ?>
         <ul>
-          <?php foreach ($_SESSION['tasks'] as $index => $task): ?>
+          <?php foreach ($tasks as $task): ?>
             <li>
               <strong class="<?php echo ($task['status'] ?? 'pending') === 'completed' ? 'completed' : ''; ?>">
-                <?php echo $task['title']; ?>
-              </strong>: <?php echo $task['desc'] ?: 'No description'; ?>
+                <?php echo htmlspecialchars($task['title']); ?>
+              </strong>: <?php echo htmlspecialchars($task['description'] ?? 'No description'); ?>
 
               <?php if (!isset($task['status']) || $task['status'] === 'pending'): ?>
-                <a href="sidebar_tasks.php?complete=<?php echo $index; ?>" class="task-btn">✅ Start Timer</a>
+                <a href="sidebar_tasks.php?complete=<?php echo $task['id']; ?>" class="task-btn">✅ Start Timer</a>
               <?php elseif ($task['status'] === 'in-progress'): ?>
-                <span class="timer" id="timer-<?php echo $index; ?>"><?php echo str_pad($task['remaining'] ?? 60,2,'0',STR_PAD_LEFT); ?>:00</span>
-                <button class="task-btn stop-btn" onclick="stopTimer(<?php echo $index; ?>)">⏸ Stop Timer</button>
-                <button class="task-btn resume-btn" onclick="resumeTimer(<?php echo $index; ?>)">▶ Resume Timer</button>
+                <span class="timer" id="timer-<?php echo $task['id']; ?>">
+                  <?php echo str_pad($task['remaining'] ?? 60, 2, '0', STR_PAD_LEFT); ?>:00
+                </span>
+                <button class="task-btn stop-btn" onclick="stopTimer(<?php echo $task['id']; ?>)">⏸ Stop Timer</button>
+                <button class="task-btn resume-btn" onclick="resumeTimer(<?php echo $task['id']; ?>)">▶ Resume Timer</button>
               <?php else: ?>
                 <span class="completed">✔ Completed</span>
               <?php endif; ?>
@@ -94,51 +111,68 @@ if (isset($_GET['complete'])) {
 </footer>
 
 <script>
-// Store intervals and remaining time for each task
-const intervals = {};
-const remainingTimes = {};
-<?php foreach ($_SESSION['tasks'] as $index => $task):
-if (($task['status'] ?? '') === 'in-progress'):
-$start_time = $task['start_time'] ?? time();
-$remaining = $task['remaining'] ?? 60;
-?>
-remainingTimes[<?php echo $index; ?>] = <?php echo $remaining; ?> - (Math.floor(Date.now()/1000) - <?php echo $start_time; ?>);
-const timerElem<?php echo $index; ?> = document.getElementById('timer-<?php echo $index; ?>');
-intervals[<?php echo $index; ?>] = null;
+window.addEventListener("DOMContentLoaded", function() {
+  const intervals = {};
+  const remainingTimes = {};
 
-function startInterval<?php echo $index; ?>() {
-    if (intervals[<?php echo $index; ?>]) return;
-    intervals[<?php echo $index; ?>] = setInterval(() => {
-        if (remainingTimes[<?php echo $index; ?>] <= 0) {
-            clearInterval(intervals[<?php echo $index; ?>]);
-            timerElem<?php echo $index; ?>.innerText = "✔ Completed";
-            alert("🎉 Congratulations! You completed the task! Keep up the great work 💪");
-            fetch('update_task_status.php?index=<?php echo $index; ?>&status=completed');
-        } else {
-            const mins = Math.floor(remainingTimes[<?php echo $index; ?>] / 60);
-            const secs = remainingTimes[<?php echo $index; ?>] % 60;
-            timerElem<?php echo $index; ?>.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-            remainingTimes[<?php echo $index; ?>]--;
-        }
-    }, 1000);
-}
-startInterval<?php echo $index; ?>();
-<?php endif; endforeach; ?>
+  <?php foreach ($tasks as $task):
+  if (($task['status'] ?? '') === 'in-progress'):
+  $start_time = $task['start_time'] ?? time();
+  $remaining = $task['remaining'] ?? 60;
+  $task_id = $task['id'];
+  ?>
+  const taskId<?php echo $task_id; ?> = <?php echo $task_id; ?>;
+  const timerElem<?php echo $task_id; ?> = document.getElementById('timer-<?php echo $task_id; ?>');
+  remainingTimes[taskId<?php echo $task_id; ?>] = Math.max(0, <?php echo $remaining; ?> - (Math.floor(Date.now()/1000) - <?php echo $start_time; ?>));
 
-function stopTimer(index) {
-    if (intervals[index]) {
-        clearInterval(intervals[index]);
-        intervals[index] = null;
-        alert("⏸ Timer stopped! You can resume it anytime 💪");
-    }
-}
+  function updateTimer<?php echo $task_id; ?>() {
+      if (!timerElem<?php echo $task_id; ?>) return;
+      if (remainingTimes[taskId<?php echo $task_id; ?>] <= 0) {
+          clearInterval(intervals[taskId<?php echo $task_id; ?>]);
+          timerElem<?php echo $task_id; ?>.innerText = "✔ Completed";
+          alert("🎉 Task completed! 💪");
+          fetch('update_task_status.php?id=<?php echo $task_id; ?>&status=completed');
+          return;
+      }
+      const mins = Math.floor(remainingTimes[taskId<?php echo $task_id; ?>] / 60);
+      const secs = remainingTimes[taskId<?php echo $task_id; ?>] % 60;
+      timerElem<?php echo $task_id; ?>.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+      remainingTimes[taskId<?php echo $task_id; ?>]--;
+  }
 
-function resumeTimer(index) {
-    if (!intervals[index]) {
-        startInterval<?php echo $index; ?>();
-        alert("▶ Timer resumed! Keep going 💪");
-    }
-}
+  intervals[taskId<?php echo $task_id; ?>] = setInterval(updateTimer<?php echo $task_id; ?>, 1000);
+  <?php endif; endforeach; ?>
+
+  window.stopTimer = function(id) {
+      if (intervals[id]) {
+          clearInterval(intervals[id]);
+          intervals[id] = null;
+          alert("⏸ Timer stopped!");
+      }
+  }
+
+  window.resumeTimer = function(id) {
+      if (!intervals[id] && remainingTimes[id] > 0) {
+          intervals[id] = setInterval(() => {
+              const timerElem = document.getElementById('timer-' + id);
+              if (!timerElem) return;
+              if (remainingTimes[id] <= 0) {
+                  clearInterval(intervals[id]);
+                  timerElem.innerText = "✔ Completed";
+                  alert("🎉 Task completed!");
+                  fetch('update_task_status.php?id=' + id + '&status=completed');
+                  return;
+              }
+              const mins = Math.floor(remainingTimes[id] / 60);
+              const secs = remainingTimes[id] % 60;
+              timerElem.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+              remainingTimes[id]--;
+          }, 1000);
+          alert("▶ Timer resumed!");
+      }
+  }
+});
 </script>
+
 </body>
 </html>
