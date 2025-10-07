@@ -59,5 +59,33 @@ if (!isset($skip_create_table)) {
     if (!$conn->query($sql_tasks)) {
         die("Error creating tasks table: " . $conn->error);
     }
+
+    // Flashcards table
+    $sql_flashcards = "CREATE TABLE IF NOT EXISTS flashcards (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        question VARCHAR(255) NOT NULL,
+        answer VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB";
+
+    if (!$conn->query($sql_flashcards)) {
+        die("Error creating flashcards table: " . $conn->error);
+    }
+
+    // Notes table
+    $sql_notes = "CREATE TABLE IF NOT EXISTS notes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        content TEXT,
+        file_path VARCHAR(255) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB";
+
+    if (!$conn->query($sql_notes)) {
+        die("Error creating notes table: " . $conn->error);
+    }
 }
 ?>
