@@ -25,11 +25,11 @@ $result = $stmt->get_result();
 $tasks = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Handle starting a task (mark in-progress) via JS fetch
+// Handle starting a task (mark in-progress)
 if (isset($_GET['complete'])) {
     $task_id = (int)$_GET['complete'];
     $start_time = time();
-    $remaining = isset($_GET['custom']) ? (int)$_GET['custom']*60 : 60;
+    $remaining = isset($_GET['custom']) ? (int)$_GET['custom'] * 60 : 60;
 
     $stmt = $conn->prepare("UPDATE tasks SET status='in-progress', start_time=?, remaining=? WHERE id=? AND user_id=?");
     $stmt->bind_param("iiii", $start_time, $remaining, $task_id, $user_id);
@@ -52,6 +52,7 @@ if (isset($_GET['complete'])) {
 .task-btn { margin-left:10px; color:#fff; background:#28a745; padding:2px 6px; text-decoration:none; border-radius:4px; cursor:pointer; }
 .toggle-btn { background:#ffc107; color:#000; }
 .custom-time { width:50px; border-radius:5px; padding:2px; margin-left:10px; }
+.desc-text { color:#444; margin-left:10px; font-style:italic; }
 </style>
 </head>
 <body>
@@ -85,6 +86,7 @@ if (isset($_GET['complete'])) {
               </strong>: <?php echo htmlspecialchars($task['description'] ?? 'No description'); ?>
 
               <?php if (!isset($task['status']) || $task['status'] === 'pending'): ?>
+                <span class="desc-text">enter the time limit which you want:</span>
                 <input type="number" class="custom-time" id="custom-<?php echo $task['id']; ?>" placeholder="25" min="1" max="180"> min
                 <a href="#" onclick="startTimer(<?php echo $task['id']; ?>, this)" class="task-btn">▶ Start</a>
                 <span class="timer" id="timer-<?php echo $task['id']; ?>">00:00</span>
@@ -152,7 +154,6 @@ window.addEventListener("DOMContentLoaded", function() {
       if(btn) btn.style.display = 'none';
       if(completeBtn) completeBtn.style.display = 'inline-block';
 
-      // ✅ FIX: Only show reset button if task is NOT completed
       if(timerElem.innerText !== "✔ Completed") {
         let resetBtn = document.getElementById('reset-btn-' + id);
         if(!resetBtn) {
@@ -179,6 +180,7 @@ window.addEventListener("DOMContentLoaded", function() {
   }
   <?php endforeach; ?>
 
+  // ✅ START TIMER FUNCTION
   window.startTimer = function(id, startBtn) {
     const customInput = document.getElementById('custom-' + id);
     const customMinutes = parseInt(customInput?.value || 25);
@@ -193,7 +195,7 @@ window.addEventListener("DOMContentLoaded", function() {
         const completeBtn = document.getElementById('complete-btn-' + id);
 
         if(btn) btn.style.display = 'inline-block';
-        if(completeBtn) completeBtn.style.display = 'none';
+        if(completeBtn) completeBtn.style.display = 'inline-block';
         if(startBtn) startBtn.style.display = 'none';
 
         clearInterval(intervals[id]);
@@ -201,6 +203,7 @@ window.addEventListener("DOMContentLoaded", function() {
       });
   };
 
+  // ⏸ / ▶ Pause/Resume
   window.toggleTimer = function(id) {
     const btn = document.getElementById('toggle-' + id);
     if(!btn) return;
@@ -214,6 +217,7 @@ window.addEventListener("DOMContentLoaded", function() {
     }
   };
 
+  // 🔄 Reset Timer
   window.resetTimer = function(id) {
     remainingTimes[id] = originalTimes[id];
     const timerElem = document.getElementById('timer-' + id);
@@ -233,6 +237,7 @@ window.addEventListener("DOMContentLoaded", function() {
     clearInterval(intervals[id]);
   };
 
+  // ✅ MARK COMPLETE FUNCTION
   window.markComplete = function(id) {
     clearInterval(intervals[id]);
     const timerElem = document.getElementById('timer-' + id);
@@ -241,7 +246,7 @@ window.addEventListener("DOMContentLoaded", function() {
     if(timerElem) timerElem.innerText = "✔ Completed";
     if(btn) btn.style.display = 'none';
     if(completeBtn) completeBtn.style.display = 'none';
-    // ✅ FIX: Remove any existing reset button when marked complete
+
     const resetBtn = document.getElementById('reset-btn-' + id);
     if(resetBtn) resetBtn.remove();
 
