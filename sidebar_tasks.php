@@ -17,6 +17,29 @@ $stmt->bind_result($username, $email);
 $stmt->fetch();
 $stmt->close();
 
+// Handle task addition
+$task_added = false; 
+$success = ''; 
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['taskTitle'])) {
+    $title = trim($_POST['taskTitle']);
+    $desc  = trim($_POST['taskDesc']);
+    if ($title) {
+        $stmt = $conn->prepare("INSERT INTO tasks (user_id, title, description) VALUES (?, ?, ?)");
+        $stmt->bind_param("iss", $user_id, $title, $desc);
+        if ($stmt->execute()) {
+            $task_added = true;
+            $success = "✅ Task added successfully!";
+        } else {
+            $error = "❌ Failed to add task. Please try again.";
+        }
+        $stmt->close();
+    } else {
+        $error = "⚠️ Task title cannot be empty!";
+    }
+}
+
 // Fetch tasks for this user
 $stmt = $conn->prepare("SELECT id, title, description, status, start_time, remaining FROM tasks WHERE user_id = ?");
 $stmt->bind_param("i", $user_id);
@@ -29,14 +52,14 @@ $stmt->close();
 if (isset($_GET['complete'])) {
     $task_id = (int)$_GET['complete'];
     $start_time = time();
-    $remaining = 60; // 1 minute timer
+    $remaining = isset($_GET['custom']) ? (int)$_GET['custom'] * 60 : 60;
 
     $stmt = $conn->prepare("UPDATE tasks SET status='in-progress', start_time=?, remaining=? WHERE id=? AND user_id=?");
     $stmt->bind_param("iiii", $start_time, $remaining, $task_id, $user_id);
     $stmt->execute();
     $stmt->close();
 
-    header("Location: sidebar_tasks.php");
+    echo "success";
     exit();
 }
 ?>
@@ -51,6 +74,8 @@ if (isset($_GET['complete'])) {
 .completed { color: #6c757d; text-decoration: line-through; }
 .task-btn { margin-left:10px; color:#fff; background:#28a745; padding:2px 6px; text-decoration:none; border-radius:4px; cursor:pointer; }
 .toggle-btn { background:#ffc107; color:#000; }
+.custom-time { width:50px; border-radius:5px; padding:2px; margin-left:10px; }
+.desc-text { color:#444; margin-left:10px; font-style:italic; }
 </style>
 </head>
 <body>
@@ -84,14 +109,20 @@ if (isset($_GET['complete'])) {
               </strong>: <?php echo htmlspecialchars($task['description'] ?? 'No description'); ?>
 
               <?php if (!isset($task['status']) || $task['status'] === 'pending'): ?>
-                <a href="sidebar_tasks.php?complete=<?php echo $task['id']; ?>" class="task-btn">✅ Start Timer</a>
+                <span class="desc-text">enter the time limit which you want:</span>
+                <input type="number" class="custom-time" id="custom-<?php echo $task['id']; ?>" placeholder="25" min="1" max="180"> min
+                <a href="#" onclick="startTimer(<?php echo $task['id']; ?>, this)" class="task-btn">▶ Start</a>
+                <span class="timer" id="timer-<?php echo $task['id']; ?>">00:00</span>
+                <button class="task-btn toggle-btn" id="toggle-<?php echo $task['id']; ?>" style="display:none;" onclick="toggleTimer(<?php echo $task['id']; ?>)">⏸ Pause</button>
+                <button class="task-btn" style="background:#17a2b8; display:none;" id="complete-btn-<?php echo $task['id']; ?>" onclick="markComplete(<?php echo $task['id']; ?>)">✅ Mark Complete</button>
               <?php elseif ($task['status'] === 'in-progress' || $task['status'] === 'paused'): ?>
                 <span class="timer" id="timer-<?php echo $task['id']; ?>">
                   <?php echo str_pad($task['remaining'] ?? 60, 2, '0', STR_PAD_LEFT); ?>:00
                 </span>
                 <button class="task-btn toggle-btn" id="toggle-<?php echo $task['id']; ?>" onclick="toggleTimer(<?php echo $task['id']; ?>)">
-                  <?php echo $task['status'] === 'paused' ? '▶ Resume' : '⏸ Stop'; ?>
+                  <?php echo $task['status'] === 'paused' ? '▶ Resume' : '⏸ Pause'; ?>
                 </button>
+                <button class="task-btn" style="background:#17a2b8;" id="complete-btn-<?php echo $task['id']; ?>" onclick="markComplete(<?php echo $task['id']; ?>)">✅ Mark Complete</button>
               <?php else: ?>
                 <span class="completed">✔ Completed</span>
               <?php endif; ?>
@@ -99,9 +130,26 @@ if (isset($_GET['complete'])) {
           <?php endforeach; ?>
         </ul>
       <?php else: ?>
-        <p>No tasks yet. Add some from your <a href="dashboard.php">dashboard</a>!</p>
+        <p>No tasks yet. Add some below 👇</p>
       <?php endif; ?>
     </div>
+
+    <!-- ✅ Add Task Card -->
+    <div class="card">
+      <h3>➕ Add Task</h3>
+      <form method="POST" onsubmit="return validateTask()">
+        <input type="text" id="taskTitle" name="taskTitle" placeholder="Task title" />
+        <textarea id="taskDesc" name="taskDesc" placeholder="Task description"></textarea>
+        <button type="submit">Add Task</button>
+      </form>
+
+      <?php if ($task_added): ?>
+        <p style="color:green;"><?php echo $success; ?></p>
+      <?php elseif (!empty($error)): ?>
+        <p style="color:red;"><?php echo $error; ?></p>
+      <?php endif; ?>
+    </div>
+
   </div>
 </main>
 </div>
@@ -111,85 +159,143 @@ if (isset($_GET['complete'])) {
 </footer>
 
 <script>
+function validateTask() {
+  const title = document.getElementById("taskTitle").value.trim();
+  if(!title) {
+    alert("⚠️ Please enter a task title!");
+    return false;
+  }
+  return true;
+}
+
 window.addEventListener("DOMContentLoaded", function() {
   const intervals = {};
   const remainingTimes = {};
+  const originalTimes = {};
 
   <?php foreach ($tasks as $task):
     $task_id = $task['id'];
     $status = $task['status'] ?? 'pending';
     $start_time = $task['start_time'] ?? time();
-    $remaining = $task['remaining'] ?? 60; 
+    $remaining = $task['remaining'] ?? 60;
   ?>
   const id<?php echo $task_id; ?> = <?php echo $task_id; ?>;
-  const timerElem<?php echo $task_id; ?> = document.getElementById('timer-<?php echo $task_id; ?>');
-  const btn<?php echo $task_id; ?> = document.getElementById('toggle-<?php echo $task_id; ?>');
-
-  // Correct calculation of remaining time based on status
   let remainingTime<?php echo $task_id; ?> = <?php echo $remaining; ?>;
-
   if ("<?php echo $status; ?>" === 'in-progress') {
     let elapsed = Math.floor(Date.now()/1000) - <?php echo $start_time; ?>;
     remainingTime<?php echo $task_id; ?> = Math.max(0, remainingTime<?php echo $task_id; ?> - elapsed);
-  } // If paused, keep remainingTime as saved, no elapsed subtraction
+  } else if ("<?php echo $status; ?>" === 'paused') {
+    remainingTime<?php echo $task_id; ?> = <?php echo $remaining; ?>;
+  }
 
   remainingTimes[id<?php echo $task_id; ?>] = remainingTime<?php echo $task_id; ?>;
+  originalTimes[id<?php echo $task_id; ?>] = remainingTime<?php echo $task_id; ?>;
 
-  function updateTimer<?php echo $task_id; ?>() {
-    if (!timerElem<?php echo $task_id; ?>) return;
-    if (remainingTimes[id<?php echo $task_id; ?>] <= 0) {
-      clearInterval(intervals[id<?php echo $task_id; ?>]);
-      timerElem<?php echo $task_id; ?>.innerText = "✔ Completed";
-      if(btn<?php echo $task_id; ?>) btn<?php echo $task_id; ?>.style.display = 'none';
-      alert("🎉 Task completed! 💪");
-      fetch(`update_task_status.php?id=${id<?php echo $task_id; ?>}&status=completed`);
+  function updateSingleTimer(id) {
+    const timerElem = document.getElementById('timer-' + id);
+    const btn = document.getElementById('toggle-' + id);
+    const completeBtn = document.getElementById('complete-btn-' + id);
+
+    if (remainingTimes[id] <= 0) {
+      clearInterval(intervals[id]);
+      intervals[id] = null;
+      timerElem.innerText = "⏰ Time's up!";
+      if(btn) btn.style.display = 'none';
+      if(completeBtn) completeBtn.style.display = 'inline-block';
+
+      if(timerElem.innerText !== "✔ Completed") {
+        let resetBtn = document.getElementById('reset-btn-' + id);
+        if(!resetBtn) {
+          resetBtn = document.createElement('button');
+          resetBtn.id = 'reset-btn-' + id;
+          resetBtn.className = 'task-btn';
+          resetBtn.style.background = '#17a2b8';
+          resetBtn.innerText = '🔄 Reset Timer';
+          resetBtn.onclick = () => resetTimer(id);
+          completeBtn.parentNode.appendChild(resetBtn);
+        }
+      }
       return;
     }
 
-    const mins = Math.floor(remainingTimes[id<?php echo $task_id; ?>] / 60);
-    const secs = remainingTimes[id<?php echo $task_id; ?>] % 60;
-    timerElem<?php echo $task_id; ?>.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-    remainingTimes[id<?php echo $task_id; ?>]--;
+    const mins = Math.floor(remainingTimes[id] / 60);
+    const secs = remainingTimes[id] % 60;
+    timerElem.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    remainingTimes[id]--;
   }
 
-  <?php if ($status === 'in-progress'): ?>
-  intervals[id<?php echo $task_id; ?>] = setInterval(updateTimer<?php echo $task_id; ?>, 1000);
-  <?php endif; ?>
-
+  if ("<?php echo $status; ?>" === 'in-progress') {
+    intervals[id<?php echo $task_id; ?>] = setInterval(() => updateSingleTimer(id<?php echo $task_id; ?>), 1000);
+  }
   <?php endforeach; ?>
+
+  window.startTimer = function(id, startBtn) {
+    const customInput = document.getElementById('custom-' + id);
+    const customMinutes = parseInt(customInput?.value || 25);
+
+    fetch(`sidebar_tasks.php?complete=${id}&custom=${customMinutes}`)
+      .then(res => res.text())
+      .then(() => {
+        remainingTimes[id] = customMinutes * 60;
+        originalTimes[id] = customMinutes * 60;
+        const timerElem = document.getElementById('timer-' + id);
+        const btn = document.getElementById('toggle-' + id);
+        const completeBtn = document.getElementById('complete-btn-' + id);
+
+        if(btn) btn.style.display = 'inline-block';
+        if(completeBtn) completeBtn.style.display = 'inline-block';
+        if(startBtn) startBtn.style.display = 'none';
+
+        clearInterval(intervals[id]);
+        intervals[id] = setInterval(() => updateSingleTimer(id), 1000);
+      });
+  };
 
   window.toggleTimer = function(id) {
     const btn = document.getElementById('toggle-' + id);
-    const timerElem = document.getElementById('timer-' + id);
-    if (!btn || !timerElem) return;
-
-    if (intervals[id]) {
-      // Pause timer + save remaining time to database
+    if(!btn) return;
+    if(intervals[id]) {
       clearInterval(intervals[id]);
       intervals[id] = null;
       btn.innerText = "▶ Resume";
-      fetch(`update_task_status.php?id=${id}&status=paused&remaining=${remainingTimes[id]}`);
     } else {
-      // Resume timer and update start time
-      fetch(`update_task_status.php?id=${id}&status=in-progress&remaining=${remainingTimes[id]}`)
-      .then(() => {
-        intervals[id] = setInterval(function() {
-          if (remainingTimes[id] <= 0) {
-            clearInterval(intervals[id]);
-            timerElem.innerText = "✔ Completed";
-            btn.style.display = 'none';
-            alert("🎉 Task completed! 💪");
-            fetch(`update_task_status.php?id=${id}&status=completed`);
-            return;
-          }
-          const mins = Math.floor(remainingTimes[id] / 60);
-          const secs = remainingTimes[id] % 60;
-          timerElem.innerText = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-          remainingTimes[id]--;
-        }, 1000);
-        btn.innerText = "⏸ Stop";
-      });
+      intervals[id] = setInterval(() => updateSingleTimer(id), 1000);
+      btn.innerText = "⏸ Pause";
     }
+  };
+
+  window.resetTimer = function(id) {
+    remainingTimes[id] = originalTimes[id];
+    const timerElem = document.getElementById('timer-' + id);
+    timerElem.innerText = `${String(Math.floor(remainingTimes[id]/60)).padStart(2,'0')}:${String(remainingTimes[id]%60).padStart(2,'0')}`;
+
+    const startBtn = document.querySelector(`a[onclick="startTimer(${id}, this)"]`);
+    const btn = document.getElementById('toggle-' + id);
+    const completeBtn = document.getElementById('complete-btn-' + id);
+
+    if(startBtn) startBtn.style.display = 'inline-block';
+    if(btn) btn.style.display = 'none';
+    if(completeBtn) completeBtn.style.display = 'none';
+
+    const resetBtn = document.getElementById('reset-btn-' + id);
+    if(resetBtn) resetBtn.remove();
+
+    clearInterval(intervals[id]);
+  };
+
+  window.markComplete = function(id) {
+    clearInterval(intervals[id]);
+    const timerElem = document.getElementById('timer-' + id);
+    const btn = document.getElementById('toggle-' + id);
+    const completeBtn = document.getElementById('complete-btn-' + id);
+    if(timerElem) timerElem.innerText = "✔ Completed";
+    if(btn) btn.style.display = 'none';
+    if(completeBtn) completeBtn.style.display = 'none';
+
+    const resetBtn = document.getElementById('reset-btn-' + id);
+    if(resetBtn) resetBtn.remove();
+
+    fetch(`update_task_status.php?id=${id}&status=completed`);
   };
 });
 </script>
