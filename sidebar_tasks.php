@@ -17,6 +17,29 @@ $stmt->bind_result($username, $email);
 $stmt->fetch();
 $stmt->close();
 
+// Handle task addition
+$task_added = false; 
+$success = ''; 
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['taskTitle'])) {
+    $title = trim($_POST['taskTitle']);
+    $desc  = trim($_POST['taskDesc']);
+    if ($title) {
+        $stmt = $conn->prepare("INSERT INTO tasks (user_id, title, description) VALUES (?, ?, ?)");
+        $stmt->bind_param("iss", $user_id, $title, $desc);
+        if ($stmt->execute()) {
+            $task_added = true;
+            $success = "✅ Task added successfully!";
+        } else {
+            $error = "❌ Failed to add task. Please try again.";
+        }
+        $stmt->close();
+    } else {
+        $error = "⚠️ Task title cannot be empty!";
+    }
+}
+
 // Fetch tasks for this user
 $stmt = $conn->prepare("SELECT id, title, description, status, start_time, remaining FROM tasks WHERE user_id = ?");
 $stmt->bind_param("i", $user_id);
@@ -107,9 +130,26 @@ if (isset($_GET['complete'])) {
           <?php endforeach; ?>
         </ul>
       <?php else: ?>
-        <p>No tasks yet. Add some from your <a href="dashboard.php">dashboard</a>!</p>
+        <p>No tasks yet. Add some below 👇</p>
       <?php endif; ?>
     </div>
+
+    <!-- ✅ Add Task Card -->
+    <div class="card">
+      <h3>➕ Add Task</h3>
+      <form method="POST" onsubmit="return validateTask()">
+        <input type="text" id="taskTitle" name="taskTitle" placeholder="Task title" />
+        <textarea id="taskDesc" name="taskDesc" placeholder="Task description"></textarea>
+        <button type="submit">Add Task</button>
+      </form>
+
+      <?php if ($task_added): ?>
+        <p style="color:green;"><?php echo $success; ?></p>
+      <?php elseif (!empty($error)): ?>
+        <p style="color:red;"><?php echo $error; ?></p>
+      <?php endif; ?>
+    </div>
+
   </div>
 </main>
 </div>
@@ -119,6 +159,15 @@ if (isset($_GET['complete'])) {
 </footer>
 
 <script>
+function validateTask() {
+  const title = document.getElementById("taskTitle").value.trim();
+  if(!title) {
+    alert("⚠️ Please enter a task title!");
+    return false;
+  }
+  return true;
+}
+
 window.addEventListener("DOMContentLoaded", function() {
   const intervals = {};
   const remainingTimes = {};
@@ -180,7 +229,6 @@ window.addEventListener("DOMContentLoaded", function() {
   }
   <?php endforeach; ?>
 
-  // ✅ START TIMER FUNCTION
   window.startTimer = function(id, startBtn) {
     const customInput = document.getElementById('custom-' + id);
     const customMinutes = parseInt(customInput?.value || 25);
@@ -203,7 +251,6 @@ window.addEventListener("DOMContentLoaded", function() {
       });
   };
 
-  // ⏸ / ▶ Pause/Resume
   window.toggleTimer = function(id) {
     const btn = document.getElementById('toggle-' + id);
     if(!btn) return;
@@ -217,7 +264,6 @@ window.addEventListener("DOMContentLoaded", function() {
     }
   };
 
-  // 🔄 Reset Timer
   window.resetTimer = function(id) {
     remainingTimes[id] = originalTimes[id];
     const timerElem = document.getElementById('timer-' + id);
@@ -237,7 +283,6 @@ window.addEventListener("DOMContentLoaded", function() {
     clearInterval(intervals[id]);
   };
 
-  // ✅ MARK COMPLETE FUNCTION
   window.markComplete = function(id) {
     clearInterval(intervals[id]);
     const timerElem = document.getElementById('timer-' + id);
