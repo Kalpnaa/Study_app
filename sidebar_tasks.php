@@ -62,7 +62,7 @@ if (isset($_GET['complete'])) {
     <li class="active">📝 Tasks</li>
     <li><a href="flashcards.php" style="color:white; text-decoration:none;">📚 Flashcards</a></li>
     <li><a href="notes.php" style="color:white; text-decoration:none;">📂 Notes</a></li>
-    <li><a href="studycircle.php" style="color:white; text-decoration:none;">👥 Study Circle</a></li>
+    <li><a href="calender.php" style="color:white; text-decoration:none;">👥 Calendar</a></li>
     <li><a href="logout.php" style="color:white; text-decoration:none;">🚪 Logout</a></li>
   </ul>
 </aside>

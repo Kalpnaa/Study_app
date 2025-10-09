@@ -89,7 +89,7 @@ $stmt->close();
       <li><a href="sidebar_tasks.php" style="color:white;text-decoration:none;">📝 Tasks</a></li>
       <li><a href="flashcards.php" style="color:white;text-decoration:none;">📚 Flashcards</a></li>
       <li class="active"><a href="notes.php" style="color:white;text-decoration:none;">📂 Notes</a></li>
-      <li>👥 Study Circle</li>
+      <li><a href="calender.php" style="color:white; text-decoration:none;">👥 Calendar</a></li>
       <li><a href="logout.php" style="color:white;text-decoration:none;">🚪 Logout</a></li>
     </ul>
   </aside>

@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['taskTitle'])) {
       <li><a href="sidebar_tasks.php" style="color:white; text-decoration:none;">📝 Tasks</a></li>
       <li><a href="flashcards.php" style="color:white; text-decoration:none;">📚 Flashcards</a></li>
       <li><a href="notes.php" style="color:white; text-decoration:none;">📂 Notes</a></li>
-      <li>👥 Study Circle</li>
+      <li><a href="calender.php" style="color:white; text-decoration:none;">👥 Calendar</a></li>
       <li><a href="logout.php" style="color:white; text-decoration:none;">🚪 Logout</a></li>
     </ul>
   </aside>
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['taskTitle'])) {
       <!-- Flashcards -->
       <div class="card">
         <h3>📚 Flashcards</h3>
-        <p>Generate flashcards with AI to aid your studying.</p>
+        <p>Make flashcards to help with last minite revision</p>
         <button onclick="window.location.href='flashcards.php'">Go to Flashcards</button>
       </div>
 

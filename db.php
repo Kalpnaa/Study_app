@@ -95,6 +95,22 @@ if (!isset($skip_create_table)) {
     if (!$conn->query($sql_notes)) {
         die("Error creating notes table: " . $conn->error);
     }
+    // Deadlines / Calendar table
+    $sql_deadlines = "CREATE TABLE IF NOT EXISTS deadlines (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        deadline_date DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        notified TINYINT(1) DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB";
+
+    if (!$conn->query($sql_deadlines)) {
+        die("Error creating deadlines table: " . $conn->error);
+    }
+
 
 }
 ?>
