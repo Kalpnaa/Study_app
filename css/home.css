@@ -83,11 +83,20 @@ header p {
     border-radius: 15px;
     box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     width: 280px;
+    height: 230px; /* 🔹 set a fixed height */
     text-align: center;
     transition: all 0.4s ease;
     cursor: pointer;
     transform: translateY(0);
+
+    /* 🔹 center content */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
+
+
 
 .home-card:hover {
     transform: translateY(-10px) scale(1.05);

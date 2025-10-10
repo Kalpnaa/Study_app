@@ -43,9 +43,10 @@ if (isset($_SESSION['user_id'])) {
                 <p>Learn efficiently using interactive flashcards and save important notes for quick reference.</p>
             </div>
             <div class="home-card fade-in delay-4">
-                <h2>Join Study Circle</h2>
-                <p>Connect with friends and peers to study together and share knowledge effectively.</p>
+                <h2>Smart Calendar & Reminders</h2>
+                <p>Stay on top of your deadlines with the built-in calendar! Add important submission dates, project deadlines, or personal goals — and get daily reminders to keep your studies on track.</p>
             </div>
+
         </div>
         <div class="home-card fade-in delay-5" style="background: linear-gradient(135deg, #f6df86ff, #f78fd3ff); color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
         <h2>🌟 Why Study Buddy?</h2>
